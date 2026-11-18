@@ -42,6 +42,7 @@ jobs:
 
     - name: Generar Gradle Wrapper y Compilar APK
       run: |
+        echo "android.useAndroidX=true" >> gradle.properties
         gradle wrapper
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
