@@ -18,7 +18,7 @@ jobs:
 
     - name: Descomprimir Proyecto
       run: |
-        unzip -o kartali-pagos-android.zip
+        unzip -o kartali-pagos-android.zip || true
 
     - name: Configurar Java 17
       uses: actions/setup-java@v4
