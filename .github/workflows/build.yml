@@ -16,10 +16,11 @@ jobs:
     - name: Descargar Repositorio
       uses: actions/checkout@v4
 
-    - name: Descomprimir Proyecto
+    - name: Descomprimir y Corregir Proyecto
       run: |
         python3 -c "
-        import zipfile, os
+        import zipfile, os, glob
+
         with zipfile.ZipFile('kartali-pagos-android.zip', 'r') as z:
             for f in z.filelist:
                 clean = f.filename.replace(chr(92), '/')
@@ -30,6 +31,30 @@ jobs:
                     os.makedirs(os.path.dirname(target), exist_ok=True)
                     with open(target, 'wb') as fp:
                         fp.write(z.read(f))
+
+        for xml_path in glob.glob('app/src/main/res/**/*.xml', recursive=True):
+            with open(xml_path, 'r', encoding='utf-8', errors='ignore') as fp:
+                raw = fp.read()
+            clean_lines = []
+            for line in raw.splitlines():
+                if '<item' in line and '</item>' not in line and not line.strip().endswith('/>'):
+                    if line.strip().endswith('<item>'):
+                        idx = line.rfind('<item>')
+                        line = line[:idx] + '</item>'
+                    elif line.count('<item') > 1:
+                        parts = line.split('<item')
+                        line = parts[0] + '<item' + parts[1] + '</item>' + '<item'.join(parts[2:])
+                    else:
+                        line = line.rstrip() + '</item>'
+                clean_lines.append(line)
+            fixed = chr(10).join(clean_lines)
+            if 'themes' in xml_path:
+                print('=== BEFORE ' + xml_path + ' ===')
+                print(raw)
+                print('=== AFTER ' + xml_path + ' ===')
+                print(fixed)
+            with open(xml_path, 'w', encoding='utf-8') as fp:
+                fp.write(fixed)
         "
         ls -la
         ls -la app/src/main/
@@ -43,6 +68,7 @@ jobs:
     - name: Generar Gradle Wrapper y Compilar APK
       run: |
         echo "android.useAndroidX=true" >> gradle.properties
+        echo "android.enableJetifier=true" >> gradle.properties
         gradle wrapper
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
