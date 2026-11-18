@@ -22,7 +22,7 @@ jobs:
         import zipfile, os
         with zipfile.ZipFile('kartali-pagos-android.zip', 'r') as z:
             for f in z.filelist:
-                clean = f.filename.replace('\\', '/')
+                clean = f.filename.replace(chr(92), '/')
                 target = os.path.join('.', clean)
                 if clean.endswith('/'):
                     os.makedirs(target, exist_ok=True)
